@@ -1,0 +1,91 @@
+path: /home/robodev/Documents/BPC/Data/ipd # dataset root dir
+train: # train images (relative to 'path') 4 images
+  - train/train_cam1_000000
+  - train/train_cam1_000001
+  - train/train_cam1_000002
+  - train/train_cam1_000003
+  - train/train_cam1_000004
+  - train/train_cam1_000005
+  - train/train_cam1_000006
+  - train/train_cam1_000007
+  - train/train_cam1_000008
+  - train/train_cam1_000009
+  - train/train_cam2_000000
+  - train/train_cam2_000001
+  - train/train_cam2_000002
+  - train/train_cam2_000003
+  - train/train_cam2_000004
+  - train/train_cam2_000005
+  - train/train_cam2_000006
+  - train/train_cam2_000007
+  - train/train_cam2_000008
+  - train/train_cam2_000009
+  - train/train_cam3_000000
+  - train/train_cam3_000001
+  - train/train_cam3_000002
+  - train/train_cam3_000003
+  - train/train_cam3_000004
+  - train/train_cam3_000005
+  - train/train_cam3_000006
+  - train/train_cam3_000007
+  - train/train_cam3_000008
+  - train/train_cam3_000009
+
+val: # val images (relative to 'path') 4 images
+  - val/val_cam1_000000
+  - val/val_cam1_000001
+  - val/val_cam1_000002
+  - val/val_cam1_000003
+  - val/val_cam1_000004
+  - val/val_cam1_000005
+  - val/val_cam1_000006
+  - val/val_cam1_000007
+  - val/val_cam1_000008
+  - val/val_cam1_000009
+  - val/val_cam2_000000
+  - val/val_cam2_000001
+  - val/val_cam2_000002
+  - val/val_cam2_000003
+  - val/val_cam2_000004
+  - val/val_cam2_000005
+  - val/val_cam2_000006
+  - val/val_cam2_000007
+  - val/val_cam2_000008
+  - val/val_cam2_000009
+  - val/val_cam3_000000
+  - val/val_cam3_000001
+  - val/val_cam3_000002
+  - val/val_cam3_000003
+  - val/val_cam3_000004
+  - val/val_cam3_000005
+  - val/val_cam3_000006
+  - val/val_cam3_000007
+  - val/val_cam3_000008
+  - val/val_cam3_000009
+
+test: # test images (optional)
+nc: 21
+
+# Classes
+names:
+  0: "0"
+  1: "1"
+  2: "2"
+  3: "3"
+  4: "4"
+  5: "5"
+  6: "6"
+  7: "7"
+  8: "8"
+  9: "9"
+  10: "10"
+  11: "11"
+  12: "12"
+  13: "13"
+  14: "14"
+  15: "15"
+  16: "16"
+  17: "17"
+  18: "18"
+  19: "19"
+  20: "20"

@@ -273,3 +273,127 @@ def vis_object_poses(
         ]
         depth_diff_vis = write_text_on_image(depth_diff_vis, depth_info)
         inout.save_im(vis_depth_diff_path, depth_diff_vis)
+
+
+def export_yolo_format(
+    poses,
+    K,
+    renderer,
+    rgb=None,
+    vis_rgb_path=None,
+    vis_rgb_resolve_visib=False,
+):
+    """Visualizes 3D object models in specified poses in a single image.
+
+    Two visualizations are created:
+    1. An RGB visualization (if vis_rgb_path is not None).
+    2. A Depth-difference visualization (if vis_depth_diff_path is not None).
+
+    :param poses: List of dictionaries, each with info about one pose:
+      - 'obj_id': Object ID.
+      - 'R': 3x3 ndarray with a rotation matrix.
+      - 't': 3x1 ndarray with a translation vector.
+      - 'text_info': Info to write at the object (see write_text_on_image).
+    :param K: 3x3 ndarray with an intrinsic camera matrix.
+    :param renderer: Instance of the Renderer class (see renderer.py).
+    :param rgb: ndarray with the RGB input image.
+    :param depth: ndarray with the depth input image.
+    :param vis_rgb_path: Path to the output RGB visualization.
+    :param vis_depth_diff_path: Path to the output depth-difference visualization.
+    :param vis_rgb_resolve_visib: Whether to resolve visibility of the objects
+      (i.e. only the closest object is visualized at each pixel).
+    """
+
+    # Indicators of visualization types.
+    vis_rgb = vis_rgb_path is not None
+    # vis_depth_diff = vis_depth_diff_path is not None
+
+    if vis_rgb and rgb is None:
+        raise ValueError("RGB visualization triggered but RGB image not provided.")
+
+    # if (vis_depth_diff or (vis_rgb and vis_rgb_resolve_visib)) and depth is None:
+    #     raise ValueError("Depth visualization triggered but D image not provided.")
+
+    # Prepare images for rendering.
+    im_size = None
+    ren_rgb = None
+
+
+    if vis_rgb:
+        im_size = (rgb.shape[1], rgb.shape[0])
+        ren_rgb = np.zeros(rgb.shape, np.uint8)
+
+    # if vis_depth_diff:
+    #     if im_size and im_size != (depth.shape[1], depth.shape[0]):
+    #         raise ValueError("The RGB and D images must have the same size.")
+    #     else:
+    #         im_size = (depth.shape[1], depth.shape[0])
+
+    # if vis_depth_diff or (vis_rgb and vis_rgb_resolve_visib):
+    #     ren_depth = np.zeros((im_size[1], im_size[0]), np.float32)
+
+    with open(vis_rgb_path,"a") as f:
+        # Render the pose estimates one by one.
+        for pose in poses:
+            # Rendering.
+            if htt_available and isinstance(K, CameraModel): # hand_tracking_toolkit is used for rendering.
+                ren_out = renderer.render_object(
+                    pose["obj_id"], pose["R"], pose["t"], K
+                )
+            elif isinstance(K, np.ndarray) and K.shape == (3, 3):  # pinhole camera model is used for rendering.
+                fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
+                ren_out = renderer.render_object(
+                    pose["obj_id"], pose["R"], pose["t"], fx, fy, cx, cy
+                )
+            else:
+                raise ValueError("Camera model 'K' type {} should be either CameraModel or np.ndarray".format(type(K)))
+
+            m_rgb = None
+            if vis_rgb:
+                m_rgb = ren_out["rgb"]
+
+            m_mask = None
+            # if vis_depth_diff or (vis_rgb and vis_rgb_resolve_visib):
+            #     m_depth = ren_out["depth"]
+
+            #     # Get mask of the surface parts that are closer than the
+            #     # surfaces rendered before.
+            #     visible_mask = np.logical_or(ren_depth == 0, m_depth < ren_depth)
+            #     m_mask = np.logical_and(m_depth != 0, visible_mask)
+
+            #     ren_depth[m_mask] = m_depth[m_mask].astype(ren_depth.dtype)
+
+            # Combine the RGB renderings.
+            if vis_rgb:
+                if vis_rgb_resolve_visib:
+                    ren_rgb[m_mask] = m_rgb[m_mask].astype(ren_rgb.dtype)
+                else:
+                    ren_rgb_f = ren_rgb.astype(np.float32) + m_rgb.astype(np.float32)
+                    ren_rgb_f[ren_rgb_f > 255] = 255
+                    ren_rgb = ren_rgb_f.astype(np.uint8)
+
+                # Draw 2D bounding box and write text info.
+                obj_mask = np.sum(m_rgb > 0, axis=2)
+                ys, xs = obj_mask.nonzero()
+                if len(ys):
+                    # bbox_color = model_color
+                    # text_color = model_color
+                    # bbox_color = (0.3, 0.3, 0.3)
+                    # text_color = (1.0, 1.0, 1.0)
+                    # text_size = 11
+
+                    #bbox = misc.calc_2d_bbox(xs, ys, im_size)
+                    bbox = misc.calc_2d_bbox_normalized(xs, ys, im_size)
+                    f.write("{} {} {} {} {}\n".format(pose["obj_id"], bbox[0], bbox[1],bbox[2],bbox[3]))
+                    # im_size = (obj_mask.shape[1], obj_mask.shape[0])
+                    # ren_rgb_info = draw_rect(ren_rgb_info, bbox, bbox_color)
+
+                    # if "text_info" in pose:
+                    #     text_loc = (bbox[0] + 2, bbox[1])
+                    #     ren_rgb_info = write_text_on_image(
+                    #         ren_rgb_info,
+                    #         pose["text_info"],
+                    #         text_loc,
+                    #         color=text_color,
+                    #         size=text_size,
+                    #     )

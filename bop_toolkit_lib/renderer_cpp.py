@@ -9,6 +9,9 @@ import numpy as np
 from bop_toolkit_lib import config
 from bop_toolkit_lib import renderer
 
+import os
+os.environ['LD_LIBRARY_PATH'] = '/usr/lib/x86_64-linux-gnu'
+
 # C++ renderer (https://github.com/thodan/bop_renderer)
 sys.path.append(config.bop_renderer_path)
 import bop_renderer

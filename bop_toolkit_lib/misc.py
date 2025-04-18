@@ -224,6 +224,30 @@ def calc_2d_bbox(xs, ys, im_size=None, clip=False):
         bb_max = clip_pt_to_im(bb_max, im_size)
     return [bb_min[0], bb_min[1], bb_max[0] - bb_min[0], bb_max[1] - bb_min[1]]
 
+def calc_2d_bbox_normalized(xs, ys, im_size=None, clip=False):
+    """Calculates 2D bounding box of the given set of 2D points.
+
+    :param xs: 1D ndarray with x-coordinates of 2D points.
+    :param ys: 1D ndarray with y-coordinates of 2D points.
+    :param im_size: Image size (width, height) (used for optional clipping).
+    :param clip: Whether to clip the bounding box (default == False).
+    :return: 2D bounding box (x, y, w, h), where (x, y) is the top-left corner
+      and (w, h) is width and height of the bounding box.
+    """
+    # Calculate center and size
+    x_center = (xs.min() + xs.max()) / 2
+    y_center = (ys.min() + ys.max()) / 2
+    width = xs.max() - xs.min()
+    height = ys.max() - ys.min()
+    
+    # Normalize the coordinates by the image size
+    x_center /= im_size[0]
+    y_center /= im_size[1]
+    width /= im_size[0]
+    height /= im_size[1]
+    
+    return [x_center, y_center, width, height]
+
 
 def calc_3d_bbox(xs, ys, zs):
     """Calculates 3D bounding box of the given set of 3D points.

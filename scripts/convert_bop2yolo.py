@@ -47,8 +47,8 @@ p = {
     "targets_filename": None,
     # Select ID's of scenes, images and GT poses to be processed.
     # Empty list [] means that all ID's will be used.
-    "scene_ids": [0],
-    "im_ids": [1],
+    "scene_ids": [],
+    "im_ids": [],
     "gt_ids": [],
     #########
     # Which sensor to visualize, . By default it uses the evaluation modality set
@@ -58,7 +58,7 @@ p = {
     # Modality used to visualize ground truth, default to eval modality. Should not be "depth".
     "modality": None,
     # Sensor used to visualize ground truth, default to eval sensor.
-    "sensor": "cam1",
+    "sensor": "cam3",
 
     # ---------------------------------------------------------------------------------
     # Next parameters apply only to dataset with aligned color and depth images.
@@ -81,10 +81,13 @@ p = {
     # Folder containing the BOP datasets.
     "datasets_path": config.datasets_path,
     # Folder for output visualisations.
-    "vis_path": os.path.join(config.output_path, "vis_gt_poses"),
+    "vis_path": config.output_path,
     # Path templates for output images.
     "vis_rgb_tpath": os.path.join(
         "{vis_path}", "{dataset}", "{split}", "{scene_id:06d}", "{im_id:06d}.jpg"
+    ),
+    "gt_txt_tpath": os.path.join(
+        "{vis_path}", "{dataset}", "{split}", "{scene_id:06d}", "{im_id:06d}.txt"
     ),
     "vis_depth_diff_tpath": os.path.join(
         "{vis_path}",
@@ -112,9 +115,14 @@ if p["dataset"] in ["hot3d"]:
 #######################
 
 # Load dataset parameters.
+# dp_split = dataset_params.get_split_params(
+#     p["datasets_path"], p["dataset"], p["dataset_split"], p["dataset_split_type"], rgb_ext_=".png"
+# )
+
 dp_split = dataset_params.get_split_params(
     p["datasets_path"], p["dataset"], p["dataset_split"], p["dataset_split_type"]
 )
+
 if p["modality"] is None:
     p["modality"] = dp_split["eval_modality"]
 assert p["modality"] != "depth", "Modality should be a color modality (not 'depth')"
@@ -240,7 +248,7 @@ for scene_id in scene_ids_curr:
             rgb_available = dataset_params.sensor_has_modality(dp_split, scene_sensor, 'rgb')
             if im_tpath == "rgb_tpath" and not rgb_available:
                 im_tpath = "gray_tpath"
-
+            
             rgb = inout.load_im(
                 dp_split[im_tpath].format(scene_id=scene_id, im_id=im_id)
             )
@@ -250,51 +258,71 @@ for scene_id in scene_ids_curr:
             else:
                 rgb = rgb[:,:,:3]  # should we keep this?
 
-        depth = None
-        if p["vis_depth_diff"] or (p["vis_rgb"] and p["vis_rgb_resolve_visib"]):
-            depth_available = dataset_params.sensor_has_modality(dp_split, scene_sensor, "depth")
-            if not depth_available:
-                misc.log(f"{scene_sensor} has no depth data, skipping depth visualization")
-                p["vis_depth_diff"] = False
-                p["vis_rgb_resolve_visib"] = False
-            else:
-                depth = inout.load_depth(
-                    dp_split[tpath_keys["depth_tpath"]].format(scene_id=scene_id, im_id=im_id)
-                )
-                depth *= scene_camera[im_id]["depth_scale"]  # Convert to [mm].
+        # depth = None
+        # if p["vis_depth_diff"] or (p["vis_rgb"] and p["vis_rgb_resolve_visib"]):
+        #     depth_available = dataset_params.sensor_has_modality(dp_split, scene_sensor, "depth")
+        #     if not depth_available:
+        #         misc.log(f"{scene_sensor} has no depth data, skipping depth visualization")
+        #         p["vis_depth_diff"] = False
+        #         p["vis_rgb_resolve_visib"] = False
+        #     else:
+        #         depth = inout.load_depth(
+        #             dp_split[tpath_keys["depth_tpath"]].format(scene_id=scene_id, im_id=im_id)
+        #         )
+        #         depth *= scene_camera[im_id]["depth_scale"]  # Convert to [mm].
 
         # Path to the output RGB visualization.
         split = "{}_{}".format(p["dataset_split"], scene_sensor) if scene_sensor else p["dataset_split"] 
-        vis_rgb_path = None
-        if p["vis_rgb"]:
-            vis_rgb_path = p["vis_rgb_tpath"].format(
-                vis_path=p["vis_path"],
-                dataset=p["dataset"],
-                split=split,
-                scene_id=scene_id,
-                im_id=im_id,
-            )
+        # vis_rgb_path = None
+        # if p["vis_rgb"]:
+        #     vis_rgb_path = p["vis_rgb_tpath"].format(
+        #         vis_path=p["vis_path"],
+        #         dataset=p["dataset"],
+        #         split=split,
+        #         scene_id=scene_id,
+        #         im_id=im_id,
+        #     )
+        label_dir = os.path.join(p["vis_path"], p["dataset"], split, "{scene_id:06d}".format(scene_id=scene_id))
+        if not os.path.isdir(label_dir):
+            os.makedirs(label_dir, exist_ok=True)
 
-        # Path to the output depth difference visualization.
-        vis_depth_diff_path = None
-        if p["vis_depth_diff"]:
-            vis_depth_diff_path = p["vis_depth_diff_tpath"].format(
+        output_path = p["gt_txt_tpath"].format(
                 vis_path=p["vis_path"],
                 dataset=p["dataset"],
                 split=split,
                 scene_id=scene_id,
                 im_id=im_id,
             )
+        
+        # # Path to the output depth difference visualization.
+        # vis_depth_diff_path = None
+        # if p["vis_depth_diff"]:
+        #     vis_depth_diff_path = p["vis_depth_diff_tpath"].format(
+        #         vis_path=p["vis_path"],
+        #         dataset=p["dataset"],
+        #         split=split,
+        #         scene_id=scene_id,
+        #         im_id=im_id,
+        #     )
 
         # Visualization.
-        visualization.vis_object_poses(
+        # visualization.export_yolo_format(
+        #     poses=gt_poses,
+        #     K=cam,
+        #     renderer=ren,
+        #     rgb=rgb,
+        #     depth=depth,
+        #     vis_rgb_path=output_path,
+        #     vis_depth_diff_path=vis_depth_diff_path,
+        #     vis_rgb_resolve_visib=p["vis_rgb_resolve_visib"],
+        # )
+
+        visualization.export_yolo_format(
             poses=gt_poses,
             K=cam,
             renderer=ren,
             rgb=rgb,
-            depth=depth,
-            vis_rgb_path=vis_rgb_path,
-            vis_depth_diff_path=vis_depth_diff_path,
+            vis_rgb_path=output_path,
             vis_rgb_resolve_visib=p["vis_rgb_resolve_visib"],
         )
 

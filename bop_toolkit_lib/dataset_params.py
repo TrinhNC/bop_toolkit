@@ -153,7 +153,7 @@ def get_model_params(datasets_path, dataset_name, model_type=None):
     return p
 
 
-def get_split_params(datasets_path, dataset_name, split, split_type=None):
+def get_split_params(datasets_path, dataset_name, split, split_type=None, rgb_ext_=None):
     """Returns parameters (camera params, paths etc.) for the specified dataset.
 
     :param datasets_path: Path to a folder with datasets.
@@ -177,7 +177,7 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
     gray_ext = ".png"
     depth_ext = ".png"
 
-    if split_type == "pbr":
+    if (split_type == "pbr" and rgb_ext_==None) or rgb_ext_==".jpg":
         # The photorealistic synthetic images are provided in the JPG format.
         rgb_ext = ".jpg"
     elif dataset_name == "itodd":
@@ -463,9 +463,15 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
             p["elev_range"] = None  # Not calculated yet.
 
         supported_error_types = ["ad", "add", "adi", "mssd", "mspd"]
+
     elif dataset_name == "ipd":
-            sensor_modalities_have_separate_annotations = {"photoneo": False, "cam1" : False, "cam2" : False, "cam3" : False}
-            p["im_modalities"] = {"photoneo": ["rgb", "depth"], "cam1" : ["rgb", "aolp", "dolp", "depth"],
+            # sensor_modalities_have_separate_annotations = {"photoneo": False, "cam1" : False, "cam2" : False, "cam3" : False}
+            # p["im_modalities"] = {"photoneo": ["rgb", "depth"], "cam1" : ["rgb", "aolp", "dolp", "depth"],
+            #                       "cam2" : ["rgb", "aolp", "dolp", "depth"], "cam3" : ["rgb", "aolp", "dolp", "depth"]}
+            
+            #sensor_modalities_have_separate_annotations = {"photoneo": False, "cam1" : False, "cam2" : False, "cam3" : False}
+            sensor_modalities_have_separate_annotations = {"cam1" : False, "cam2" : False, "cam3" : False}
+            p["im_modalities"] = {"cam1" : ["rgb", "aolp", "dolp", "depth"],
                                   "cam2" : ["rgb", "aolp", "dolp", "depth"], "cam3" : ["rgb", "aolp", "dolp", "depth"]}
             p["scene_ids"] = {
                 "test": list(range(15)),
@@ -473,22 +479,34 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
                 "val": list(range(15)),
             }[split]
 
+            ## Train
             p["im_size"] = {
-                "photoneo" : (2064, 1544),
-                "cam1" : (3840, 2160),
-                "cam2": (3840, 2160),
-                "cam3": (3840, 2160),
+                # "photoneo" : (2064, 1544),
+                "cam1" : (2400, 2400),
+                "cam2": (2400, 2400),
+                "cam3": (2400, 2400),
                 "": (2400, 2400),
             }
 
+            ## Test
+            # p["im_size"] = {
+            #     # "photoneo" : (2064, 1544),
+            #     "cam1" : (3840, 2160),
+            #     "cam2": (3840, 2160),
+            #     "cam3": (3840, 2160),
+            #     "": (3840, 2160),
+            # }  
+
             p["eval_modality"] = "rgb"
-            p["eval_sensor"] = "photoneo"
+            # p["eval_sensor"] = "photoneo"
+            p["eval_sensor"] = "cam1"
+            
 
             exts = {
-                "photoneo": {"rgb": ".png", "depth": ".png"},
-                "cam1": {"rgb": ".png", "depth": ".png", "aolp": ".png", "dolp": ".png"},
-                "cam2": {"rgb": ".png", "depth": ".png", "aolp": ".png", "dolp": ".png"},
-                "cam3": {"rgb": ".png", "depth": ".png", "aolp": ".png", "dolp": ".png"},
+                # "photoneo": {"rgb": ".png", "depth": ".png"},
+                "cam1": {"rgb": rgb_ext, "depth": ".png", "aolp": ".png", "dolp": ".png"},
+                "cam2": {"rgb": rgb_ext, "depth": ".png", "aolp": ".png", "dolp": ".png"},
+                "cam3": {"rgb": rgb_ext, "depth": ".png", "aolp": ".png", "dolp": ".png"},
             }
 
             if split == "test":
